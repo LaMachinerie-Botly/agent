@@ -1,0 +1,27 @@
+{
+  "name": "lillyPizza",
+  "version": "1.1.8",
+  "description": "A Cloud compiler for lillypadUSB board",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LaMachinerie/BS-localAgent.git"
+  },
+  "keywords": [
+    "lillypad"
+  ],
+  "author": "JulesTopart",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LaMachinerie/raspizza/issues"
+  },
+  "homepage": "https://github.com/LaMachinerie/raspizza#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1"
+  }
+}
