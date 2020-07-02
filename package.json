@@ -1,27 +1,23 @@
 {
-  "name": "lillyPizza",
-  "version": "1.1.8",
-  "description": "A Cloud compiler for lillypadUSB board",
+  "name": "botly-agent",
+  "version": "1.0.0",
+  "description": "Botly upload agent",
   "main": "main.js",
   "scripts": {
     "start": "node main.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LaMachinerie/BS-localAgent.git"
+    "url": "git+https://github.com/Botly-Studio/Botly-Agent.git"
   },
-  "keywords": [
-    "lillypad"
-  ],
   "author": "JulesTopart",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/LaMachinerie/raspizza/issues"
+    "url": "https://github.com/Botly-Studio/Botly-Agent/issues"
   },
-  "homepage": "https://github.com/LaMachinerie/raspizza#readme",
+  "homepage": "https://github.com/Botly-Studio/Botly-Agent#readme",
   "dependencies": {
-    "body-parser": "^1.19.0",
-    "cors": "^2.8.5",
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "extract-zip": "^2.0.1"
   }
 }
