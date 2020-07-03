@@ -1,36 +1,73 @@
-const { basename } = require('path');
-const { json } = require('body-parser');
-
 module.exports = function (app) {
 
-    const { spawn } = require('child_process');
-
+    const fs = require('fs');
     var arduino = {};
-    arduino.cli = app.basepath + '/arduino/arduino-cli.exe';
+    arduino.cli = {}
+
+    arduino.cli.path = app.basepath + '/arduino/arduino-cli.exe';
+
+    arduino.cli.spawn = function (params, cb) {
+        const spawn = require('child_process').spawnSync;
+
+        var result = spawn(arduino.cli.path, params);
+        if (result.stderr != "") {
+            console.error('[Arduino-cli] ' + params + ': failed -> ' + result.stderr);
+            if (cb instanceof Function) cb(false);
+        } else {
+            console.log('[Arduino-cli] ' + params + ': done.')
+            if (cb instanceof Function) cb(true);
+        }
+    }
 
     arduino.install = function () {
-        arduino.installCore();
+        const path = require('path');
+        var fs = require('fs');
+
+        var docPath = path.join(process.env.USERPROFILE, 'Documents');
+        var ArdPath = path.join(docPath, 'Arduino');
+        var libPath = path.join(ArdPath, 'libraries');
+
+        if (!fs.existsSync(ArdPath)) fs.mkdirSync(ArdPath);
+        if (!fs.existsSync(libPath)) fs.mkdirSync(libPath);
+
+        arduino.updateCore(arduino.installCore);
         arduino.installLib_IRremote();
         arduino.installLib_Servo();
         arduino.installLib_Botly();
+
         arduino.sketch();
     }
 
-    arduino.sketch = function () {
-        const child = spawn(arduino.cli, ['sketch', 'new', 'sketch']);
+    arduino.testProgramm = function(){
+        
+        var code = "#include <Botly.h>\n";
+        code += "Botly robot;\n";
+        code += "void setup(){ robot.init();}\n";
+        code += "void loop(){robot.avancer(10);}";
 
-        child.on('exit', function (code, signal) {
-            console.log('child process exited with ' +
-                `code ${code} and signal ${signal}`);
-        });
 
-        child.stdout.on('data', (data) => {
-            console.log(`child stdout:\n${data}`);
-        });
+        try { fs.writeFileSync(app.basepath + '/sketch/sketch.ino', code, 'utf-8'); } catch (e) {
+            console.log('[Error] Failed to save the file : ');
+            console.log(e);
+            res.end("fail");
+            return;
+          }
 
-        child.stderr.on('data', (data) => {
-            console.error(`child stderr:\n${data}`);
+        arduino.compile(function (state) {
+            if (state) {
+                console.log("Compiled sucessfully");
+                arduino.upload(function (state) {
+                    if (state) console.log("Uploaded sucessfully");
+                    else console.log('Upload failed');
+                });
+            }
+            else console.log('Failed compilation');
         });
+    }
+    
+    arduino.sketch = function (cb) {
+        arduino.cli.spawn(['sketch', 'new', 'sketch']);
+        arduino.cli.spawn(["board", "attach", "arduino:avr:LilyPadUSB"], cb)
     }
 
     arduino.save = function (base64encoded) {
@@ -47,125 +84,102 @@ module.exports = function (app) {
         }
     }
 
-    arduino.compile = function (code) {
-
-        const fs = require('fs');
-
-        const child = spawn(arduino.cli, ['upload', '--fqbn', 'arduino:avr:LilyPadUSB', '--build-path', '/opt/lillypizza/build', 'sketch']);
-
-        child.on('exit', function (code, signal) {
-            console.log('child process exited with ' +
-                `code ${code} and signal ${signal}`);
-        });
-
-        child.stdout.on('data', (data) => {
-            console.log(`child stdout:\n${data}`);
-        });
-
-        child.stderr.on('data', (data) => {
-            console.error(`child stderr:\n${data}`);
-        });
-
+    arduino.compile = function (cb) {
+        arduino.cli.spawn(['compile', '--fqbn', 'arduino:avr:LilyPadUSB', 'sketch'], cb);
     }
 
-    arduino.installCore = function () {
+    arduino.upload = function (cb) {
+        var port = arduino.autoSelectPort();
+        console.log(port);
+        
+        if (port == "") console.log("No port");
+        arduino.cli.spawn(['upload', '-p', port, '--fqbn', 'arduino:avr:LilyPadUSB', 'sketch'], cb);
+    }
 
-        const child = spawn(arduino.cli, ['core', 'install', 'arduino:avr']);
+    arduino.autoSelectPort = function () {
+        const spawn = require('child_process').spawnSync;
 
-        child.on('exit', function (code, signal) {
-            console.log('child process exited with ' +
-                `code ${code} and signal ${signal}`);
-        });
+        var port = "";
 
-        child.stdout.on('data', (data) => {
-            console.log(`child stdout:\n${data}`);
-        });
+        var result = spawn(arduino.cli.path, ['board', 'list']);
+        if (result.stderr != "") {
+            console.error('[Arduino-cli] ' + ': failed -> ' + result.stderr);
+            if (cb instanceof Function) cb(false);
+        } else {
+            var out = "";
+            out += result.stdout;
+            var lines = out.split('\n');
+            lines.shift();
+            boards = [];
+            board = {};
+            lines.forEach(line => {
+                if (line.includes('arduino:avr:LilyPadUSB')){
+                    console.log(line);
+                    port = line.split(' ')[0];
+                    console.log(port);
+                }
+            });
+        }
+        return port;
+    }
 
-        child.stderr.on('data', (data) => {
-            console.error(`child stderr:\n${data}`);
-        });
+    arduino.updateCore = function (cb) {
+        arduino.cli.spawn(['core', 'update-index'], cb);
+    }
+
+    arduino.installCore = function (cb) {
+        arduino.cli.spawn(['core', 'install', 'arduino:avr'], cb);
     }
 
     arduino.installLib_IRremote = function () {
-
-        const child = spawn(arduino.cli, ['lib', 'install', 'IRremote']);
-
-        child.on('exit', function (code, signal) {
-            console.log('child process exited with ' +
-                `code ${code} and signal ${signal}`);
-        });
-
-        child.stdout.on('data', (data) => {
-            console.log(`child stdout:\n${data}`);
-        });
-
-        child.stderr.on('data', (data) => {
-            console.error(`child stderr:\n${data}`);
-        });
+        arduino.cli.spawn(['lib', 'install', 'IRremote']);
     }
-
 
     arduino.installLib_Servo = function () {
-
-        const child = spawn(arduino.cli, ['lib', 'install', 'Servo']);
-
-        child.on('exit', function (code, signal) {
-            console.log('child process exited with ' +
-                `code ${code} and signal ${signal}`);
-        });
-
-        child.stdout.on('data', (data) => {
-            console.log(`child stdout:\n${data}`);
-        });
-
-        child.stderr.on('data', (data) => {
-            console.error(`child stderr:\n${data}`);
-        });
+        arduino.cli.spawn(['lib', 'install', 'Servo']);
     }
 
-    arduino.installLib_Botly = function () {
+    function download(url, dest) {
 
-        console.log("Installing Botly-Library...");
-        const fs = require('fs')
+        var request = require('sync-request');
+        var content = request('GET', url);
+        fs.writeFileSync(dest, content.getBody());
+        console.log("[Botly-Library] download complete.")
+    }
+
+
+    arduino.installLib_Botly = function () {
 
         var docPath = process.env.USERPROFILE + '\\Documents\\Arduino\\libraries';
 
         try {
-            if (fs.existsSync(docPath + '\\Botly-Library\\library.json')) {
-                var raw = fs.readFileSync(docPath + '\\Botly-Library\\library.json');
-                json = JSON.parse(raw);
-                if (json.version == "2.1.0")
-                    return;
+            if (fs.existsSync(docPath + '\\Botly-Library\\library.properties')) {
+                console.log('[Arduino-cli] Botly-Library already installed');
+                return;
             }
         } catch (err) {
             console.error(err)
         }
 
+        console.log("[Botly-Library] : Installing Botly-Library...");
+        var url = "https://github.com/Botly-Studio/Botly-Library/releases/download/Strawberries/Botly-Library.zip"
 
-        var download = require('download-file')
+        var filename = "Botly-Library.zip"
 
-        var url = "https://github.com/Botly-Studio/Botly-Library/archive/master.zip"
+        console.log("[Botly-Library] : downloading...");
+        download(url, docPath + "\\" + filename);
 
-        var options = {
-            directory: docPath,
-            filename: "Botly-Library.zip"
-        }
-
-        download(url, options, function (err) {
-            if (err) throw err
-            console.log("Zip successfully downloaded !")
-        })
-
-
-        const extract = require('extract-zip')
-
+        const extract = require('extract-zip');
+        console.log("[Botly-Library] : extracting...");
         try {
-            await extract(source, { dir: target })
-            console.log('Extraction complete')
+            extract(docPath + '\\Botly-Library.zip', { dir: docPath + "\\Botly-Library" });
+            console.log("[Botly-Library] : Extraction complete");
         } catch (err) {
-            // handle any errors
+            if (err) {
+                console.error(err);
+                return;
+            }
         }
-
 
     }
 
