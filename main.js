@@ -1,54 +1,95 @@
-
-
 const path = require('path')
 const express = require('express');
 const bodyParser = require("body-parser");
-const arduino = require('./app/arduino');
+//const WindowsTrayicon = require("windows-trayicon");
+
+var cors = require('cors');
 
 var Agent = {};
 
-Agent.basepath = path.resolve(__dirname);
+Agent.basepath = process.cwd();
 
 require('./app/arduino')(Agent);
 require('./app/config')(Agent);
 require('./app/log')(Agent);
 
+
 const app = express();
+
+app.use(cors());
+app.use(bodyParser.urlencoded());
 
 app.get('/', function (req, res) {
   res.send('root');
 })
 
+app.get('/info', function (req, res) {
+  res.send('ok');
+})
+
 app.post('/upload', function (req, res) {
+  //console.log(req);
+  const fs = require('fs');
   var base64encoded = req.body.data;
   if (base64encoded != undefined) {
     code = Buffer.from(base64encoded, 'base64').toString('utf8');
-    try { fs.writeFileSync(basepath + '/sketch/sketch.ino', code, 'utf-8'); } catch (e) {
-      log('[Error] Failed to save the file : ');
-      log(e);
+    try { fs.writeFileSync(Agent.basepath + '/sketch/sketch.ino', code, 'utf-8'); } catch (e) {
+      console.log('[Error] Failed to save the file : ');
+      console.log(e);
       res.end("fail");
       return;
     }
   } else {
-    log('[Error] Nothing received :')
-    log(req.body);
+    console.log('[Error] Nothing received :')
+    console.log(req.body);
     res.end("fail");
     return;
   }
 
-  app.Arduino.compile(function(state){
+  Agent.Arduino.compile(function (state) {
     if (state) {
-      app.Arduino.upload(function(state) {
-        if(state) res.end("sucess");
+      Agent.Arduino.upload(function (state) {
+        if (state) res.end("sucess");
         else res.end('fail');
       });
-    }else res.end('fail');
+    } else res.end('fail');
   });
 
 })
 
 app.listen(3000, function () {
   Agent.log("Botly Agent is starting...")
-
   Agent.Arduino.install();
 })
+
+
+/*
+const myTrayApp = new WindowsTrayicon({
+  title: "Botly-Studio agent",
+  icon: path.resolve(Agent.basepath, "logo.ico"),
+  menu: [
+      {
+          id: "item-1-id",
+          caption: "Show console"
+      },
+      {
+          id: "item-3-id-exit",
+          caption: "Exit"
+      }
+  ]
+});
+
+myTrayApp.item((id) => {
+  switch (id) {
+      case "item-1-id": {
+          console.log("First item selected...");
+          break;
+      }
+      case "item-3-id-exit": {
+          myTrayApp.exit();
+          process.exit(0)
+          break;
+      }
+  }
+});
+*/

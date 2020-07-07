@@ -4,38 +4,34 @@ module.exports = function (app) {
     var arduino = {};
     arduino.cli = {}
 
-    arduino.cli.path = app.basepath + '/arduino/arduino-cli.exe';
+    arduino.cli.path = app.basepath + '\\arduino-cli.exe';
+    console.log("cli-path : ", arduino.cli.path);
+    
 
     arduino.cli.spawn = function (params, cb) {
         const spawn = require('child_process').spawnSync;
 
         var result = spawn(arduino.cli.path, params);
-        if (result.stderr != "") {
-            console.error('[Arduino-cli] ' + params + ': failed -> ' + result.stderr);
-            if (cb instanceof Function) cb(false);
-        } else {
+        if (result.stderr == undefined || result.stderr == "" || result.stderr.includes("Connecting")) {
             console.log('[Arduino-cli] ' + params + ': done.')
             if (cb instanceof Function) cb(true);
+        } else {
+            console.error('[Arduino-cli] ' + params + ': failed -> ' + result.stderr);
+            if (cb instanceof Function) cb(false);
         }
     }
 
     arduino.install = function () {
-        const path = require('path');
-        var fs = require('fs');
-
-        var docPath = path.join(process.env.USERPROFILE, 'Documents');
-        var ArdPath = path.join(docPath, 'Arduino');
-        var libPath = path.join(ArdPath, 'libraries');
-
-        if (!fs.existsSync(ArdPath)) fs.mkdirSync(ArdPath);
-        if (!fs.existsSync(libPath)) fs.mkdirSync(libPath);
 
         arduino.updateCore(arduino.installCore);
+
         arduino.installLib_IRremote();
         arduino.installLib_Servo();
         arduino.installLib_Botly();
 
         arduino.sketch();
+        console.log("[Arduino-cli] Ready !");
+        
     }
 
     arduino.testProgramm = function(){
@@ -139,48 +135,8 @@ module.exports = function (app) {
         arduino.cli.spawn(['lib', 'install', 'Servo']);
     }
 
-    function download(url, dest) {
-
-        var request = require('sync-request');
-        var content = request('GET', url);
-        fs.writeFileSync(dest, content.getBody());
-        console.log("[Botly-Library] download complete.")
-    }
-
-
     arduino.installLib_Botly = function () {
-
-        var docPath = process.env.USERPROFILE + '\\Documents\\Arduino\\libraries';
-
-        try {
-            if (fs.existsSync(docPath + '\\Botly-Library\\library.properties')) {
-                console.log('[Arduino-cli] Botly-Library already installed');
-                return;
-            }
-        } catch (err) {
-            console.error(err)
-        }
-
-        console.log("[Botly-Library] : Installing Botly-Library...");
-        var url = "https://github.com/Botly-Studio/Botly-Library/releases/download/Strawberries/Botly-Library.zip"
-
-        var filename = "Botly-Library.zip"
-
-        console.log("[Botly-Library] : downloading...");
-        download(url, docPath + "\\" + filename);
-
-        const extract = require('extract-zip');
-        console.log("[Botly-Library] : extracting...");
-        try {
-            extract(docPath + '\\Botly-Library.zip', { dir: docPath + "\\Botly-Library" });
-            console.log("[Botly-Library] : Extraction complete");
-        } catch (err) {
-            if (err) {
-                console.error(err);
-                return;
-            }
-        }
-
+        arduino.cli.spawn(['lib', 'install', 'Botly']);
     }
 
 

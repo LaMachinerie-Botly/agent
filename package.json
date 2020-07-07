@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Botly upload agent",
   "main": "main.js",
+  "bin": "bin.js",
   "scripts": {
     "start": "node main.js"
   },
@@ -18,6 +19,7 @@
   "homepage": "https://github.com/Botly-Studio/Botly-Agent#readme",
   "dependencies": {
     "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
     "express": "^4.17.1",
     "extract-zip": "^2.0.1",
     "sync-request": "^6.1.0"
