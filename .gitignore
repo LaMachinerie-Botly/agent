@@ -63,3 +63,8 @@ typings/
 # build folder
 build
 sketch
+
+botly-agent.exe
+botly-agent-win.exe
+botly-agent-macos
+botly-agent-linux

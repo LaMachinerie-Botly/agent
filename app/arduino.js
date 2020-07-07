@@ -11,7 +11,7 @@ module.exports = function (app) {
     arduino.cli.spawn = function (params, cb) {
         const spawn = require('child_process').spawnSync;
 
-        var result = spawn(arduino.cli.path, params);
+        var result = spawn(arduino.cli.path, params, {windowsHide: true});
         if (result.stderr == undefined || result.stderr == "" || result.stderr.includes("Connecting")) {
             console.log('[Arduino-cli] ' + params + ': done.')
             if (cb instanceof Function) cb(true);
@@ -120,6 +120,7 @@ module.exports = function (app) {
     }
 
     arduino.updateCore = function (cb) {
+        arduino.cli.spawn(['lib', 'update-index']);
         arduino.cli.spawn(['core', 'update-index'], cb);
     }
 

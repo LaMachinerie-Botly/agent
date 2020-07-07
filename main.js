@@ -59,37 +59,12 @@ app.post('/upload', function (req, res) {
 
 app.listen(3000, function () {
   Agent.log("Botly Agent is starting...")
+  
+  const sp = require('child_process').spawn;
+  sp(Agent.basepath  + "\\notifu.exe", ['/m', "Botly-Agent is running", "/i", Agent.basepath + "\\logo.ico", "/p", "Botly-Agent", "/q", "/c", "/e", "/w"], {windowsHide: true});
+
   Agent.Arduino.install();
 })
 
 
-/*
-const myTrayApp = new WindowsTrayicon({
-  title: "Botly-Studio agent",
-  icon: path.resolve(Agent.basepath, "logo.ico"),
-  menu: [
-      {
-          id: "item-1-id",
-          caption: "Show console"
-      },
-      {
-          id: "item-3-id-exit",
-          caption: "Exit"
-      }
-  ]
-});
 
-myTrayApp.item((id) => {
-  switch (id) {
-      case "item-1-id": {
-          console.log("First item selected...");
-          break;
-      }
-      case "item-3-id-exit": {
-          myTrayApp.exit();
-          process.exit(0)
-          break;
-      }
-  }
-});
-*/
