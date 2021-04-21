@@ -24,6 +24,7 @@ module.exports = function (app) {
     arduino.install = function () {
 
         arduino.updateCore(arduino.installCore);
+        arduino.installCore();
 
         arduino.installLib_IRremote();
         arduino.installLib_Servo();
@@ -120,6 +121,7 @@ module.exports = function (app) {
     }
 
     arduino.updateCore = function (cb) {
+        arduino.cli.spawn(['cache', 'clean']);
         arduino.cli.spawn(['lib', 'update-index']);
         arduino.cli.spawn(['core', 'update-index'], cb);
     }
